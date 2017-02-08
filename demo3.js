@@ -2,7 +2,6 @@
 const http = require("http");
 const service = require('./Release/nodeService');
 const events = require('events');
-const fs = require('fs');
 
 const client = new service.client();
 const info  = {
@@ -14,8 +13,8 @@ const info  = {
     mac: '12345',
     local: 'zh_CN'
 };
-
-const clientId = client.startup('C:\\Users\\Alexmurder\\Desktop\\sql','C:\\Users\\Alexmurder\\Desktop\\nodejs\\Release\\linkdood.crt',info);
+//证书和数据库目录
+const clientId = client.startup('C:\\Users\\PUGE\\Documents\\GitHub\\doodServer\\sql','C:\\Users\\PUGE\\Documents\\GitHub\\doodServer\\Release\\linkdood.crt',info);
 
 const notify = new events.EventEmitter();
 const auth = client.authService();
@@ -31,47 +30,36 @@ chat.regMsgNoticeCb(function(message){
 function landing(postdata,response){
 	console.log(`[尝试]登陆`);
 	const local = auth.login('008617791430604', '1', 1, 'vrv',function(resp){
+		let msg={};
 		switch(resp.code){
 			case 0:{
-				console.log('[成功]登录');
-				console.log('用户ID' + resp.userId);
-				notify.emit('getContactList');	
-				//notify.emit('sendMessage');
-				const msg={"code":0,"msg":resp.userId};
-				//获取好友列表
-				
+				console.log(`[成功]登录 ID:${resp.userId}`);
+				msg={"code":0,"msg":resp.userId};
+				notify.emit('getContactList');
 				break;
 			}
 			case 113:{
 				console.log('[失败]已经登陆过了!');
-				const msg={"code":113,"msg":"[失败]已经登陆过了!"};
+				msg={"code":113,"msg":"[失败]已经登陆过了!"};
 				response.write(JSON.stringify(msg));
 				response.end();
 				break;
 			}
 		}
 	});	
-	//发送消息			
-	const msg = {targetId:4328632689, message:'{"body": "hello"}', msgProperty: '', isBurn:0, messageType: 2};
-	notify.on('sendMessage', function(data){
-		chat.sendMessage(msg, function(resp){
-			if(resp.code ===0){
-				console.log('发送成功1');
-			}
+	//获取好友列表
+	notify.on('getContactList', function(data){
+		console.log("[尝试]获取好友列表");
+		contact.getContactList(function(contacts){
+			const msg={"code":0,"msg":contacts,"userId":15151};
+			console.log(msg);
+			response.write(JSON.stringify(msg));
+			response.end();
 		});
 	});
-	notify.on('getContactList', function(data){
-					contact.getContactList(function(contacts){
-						const msg={"code":0,"msg":contacts};
-						console.log(msg);
-						response.write(JSON.stringify(msg));
-						response.end();
-					});
-				});
-	//图片
-	//response.write(fs.readFileSync("C:\Users\Alexmurder\Desktop\sqlpublic\head"));
-	//response.end();
 }
+
+
 //返回好友列表
 function friend(postdata,response){
 	contact.getContactList(function(contacts){
